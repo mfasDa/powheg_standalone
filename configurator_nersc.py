@@ -27,7 +27,7 @@ class configurator_nersc:
         jobscript.write("#SBATCH -C {}\n".format(self.__platform))
         jobscript.write("#SBATCH --image={}\n".format(self.__image))
 
-    def configure_spool(self, jobscript):
+    def configure_workdir(self, jobscript):
         jobscript.write("export SCRATCH=/lustre/or-hydra/cades-birthright/mfasel_alice\n")
         jobscript.write("WORKDIR=$SCRATCH/spool/$SLURM_JOBID\n")
         jobscript.write("echo \"Using working directory $WORKDIR\"\n")
@@ -35,13 +35,13 @@ class configurator_nersc:
         jobscript.write("cd $WORKDIR\n")
 
     def configure_modules(self, jobscript):
-        jobscript.write("module load cray-python/3.7.3.2\n"))
+        jobscript.write("module load cray-python/3.7.3.2\n")
 
     def run_image(self, taskscript, logfile):
         subprocess.call("shifter {} &> {}".format(taskscript, logfile), shell = True)
 
     def get_slots_per_master(self):
-        if self.__platform = "knl":
+        if self.__platform == "knl":
             return 68
         elif self.__platform == "haswell":
             return 32
@@ -54,5 +54,5 @@ class configurator_nersc:
     def get_default_image():
         return "docker:mfasel/cc7-alice:latest"
 
-    def get_name():
+    def get_name(self):
         return "cori"

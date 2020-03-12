@@ -15,7 +15,9 @@ if __name__ == "__main__":
     image = sys.argv[2]
     batch_configurator = None
     if platform == "cades":
-        batch_configurator = 
+        batch_configurator = configurator_cades(None, image)
+    else:
+        batch_configurator = configurator_nersc(None, image, None, None)
     SOURCEDIR = os.path.dirname(os.path.abspath(sys.argv[0]))
     CURRENTSLOT = MPI.COMM_WORLD.Get_rank()
     logging.info("Starting worker %d ...", CURRENTSLOT)
