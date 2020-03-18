@@ -363,12 +363,12 @@ void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const
   {
     double radius = double(R)/10.;
     double eta = 2*maxeta - 2*radius;
-    hFullPtSpecFull[R]->Scale((1.0 / acceptedevents) * (1.0 / eta), "width");
-    hFullPtSpecSubPlus[R]->Scale((1.0 / acceptedevents) * (1.0 / eta), "width");
-    hFullPtSpecFullEta[R]->Scale((1.0 / acceptedevents) * 1.0, "width");
-    hFullPtSpecSubPlusEta[R]->Scale((1.0 / acceptedevents) * 1.0, "width");
-    hFullPtSpecTrackcut5Gev[R]->Scale((1.0 / acceptedevents) * (1.0 / eta), "width");
-    hFullPtSpecTrackcut5GevSub[R]->Scale((1.0 / acceptedevents) * (1.0 / eta), "width");
+    hFullPtSpecFull[R]->Scale((1.0 / eta), "width");
+    hFullPtSpecSubPlus[R]->Scale((1.0 / eta), "width");
+    hFullPtSpecFullEta[R]->Scale(1.0, "width");
+    hFullPtSpecSubPlusEta[R]->Scale(1.0, "width");
+    hFullPtSpecTrackcut5Gev[R]->Scale((1.0 / eta), "width");
+    hFullPtSpecTrackcut5GevSub[R]->Scale((1.0 / eta), "width");
   }
 
   TFile *fout = new TFile(foutname, "RECREATE");
