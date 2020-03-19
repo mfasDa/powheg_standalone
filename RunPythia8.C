@@ -238,6 +238,10 @@ void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const
     // pythia8->EventListing();
 
     Double_t evt_wght = pythia.info.getWeightsDetailedValue(weightname);
+    if(std::isnan(evt_wght)) {
+      std::cerr << "Event with nan-weight found" << std::endl;
+      continue;
+    }
     evt_wght *= 1e-9;
     SumW += evt_wght;
     //cout<<" Event weight is : "<<evt_wght*1e9<<endl;
