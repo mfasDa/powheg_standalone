@@ -114,37 +114,38 @@ void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const
        *hSumWeightsNeg = new TH1F("hSumWeightsNeg", "sum of neg. weights", 1, 0., 1.);
   std::map<int, TH1*> hFullPtSpecFull, hFullPtSpecSubPlus, hFullPtSpecFullEta, hFullPtSpecSubPlusEta, hFullPtSpecTrackcut5Gev, hFullPtSpecTrackcut5GevSub;
 
+  int imaxptbins = 600;
   for (auto R : RVals)
   {
     double radius = double(R)/10.;
     hFullPtSpecFull[R] = new TH1F(Form("hFullPtSpecFullR%02d", R),
                                    Form("Full jet cross section R=%.1f with small bin width;P_{T,jet}(Gev/c);d#sigma/dP_{T}d#eta(mb c/Gev)", radius),
-                                   200, 0, 200);
+                                   imaxptbins, 0, imaxptbins);
     hFullPtSpecFull[R]->Sumw2();
 
     hFullPtSpecSubPlus[R] = new TH1F(Form("hSubPtSpecR%02d", R),
                                       Form("Subtracted jet cross section R=%.1f with small bin width (plus);P_{T,jet}(Gev/c);d#sigma/dP_{T}d#eta(mb c/Gev)", radius),
-                                      250, -50, 200);
+                                      imaxptbins+50, -50, imaxptbins);
     hFullPtSpecSubPlus[R]->Sumw2();
 
     hFullPtSpecFullEta[R] = new TH1F(Form("hFullPtSpecFullR%02dEta05", R),
                                       Form("Full jet cross section R=%.1f with small bin width Eta05;P_{T,jet}(Gev/c);d#sigma/dP_{T}d#eta(mb c/Gev)", radius),
-                                      200, 0, 200);
+                                      imaxptbins, 0, imaxptbins);
     hFullPtSpecFullEta[R]->Sumw2();
 
     hFullPtSpecSubPlusEta[R] = new TH1F(Form("hSubPtSpecR%02dEta05", R),
                                          Form("Subtracted jet cross section R=%.1f with small bin width (plus) Eta05;P_{T,jet}(Gev/c);d#sigma/dP_{T}d#eta(mb c/Gev)",radius),
-                                         250, -50, 200);
+                                         imaxptbins+50, -50, imaxptbins);
     hFullPtSpecSubPlusEta[R]->Sumw2();
 
     hFullPtSpecTrackcut5Gev[R] = new TH1F(Form("hFullPtSpecTrackcut5Gev_R%02d", R),
                                            Form("jet cross section R=%.1f with Leading Pt cut at 5Gev;P_{T,jet}(Gev/c);d#sigma/dP_{T}d#eta(mb c/Gev)", radius),
-                                           200, 0, 200);
+                                           imaxptbins, 0, imaxptbins);
     hFullPtSpecTrackcut5Gev[R]->Sumw2();
 
     hFullPtSpecTrackcut5GevSub[R] = new TH1F(Form("hSubPtSpecTrackcut5Gev_R%02d", R),
                                               Form("jet cross section R=%.1f with Leading Pt cut at 5Gev;P_{T,jet}(Gev/c);d#sigma/dP_{T}d#eta(mb c/Gev)", radius),
-                                              200, 0, 200);
+                                              imaxptbins, 0, imaxptbins);
     hFullPtSpecTrackcut5GevSub[R]->Sumw2();
   }
 
