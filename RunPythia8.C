@@ -91,7 +91,7 @@ bool isSelected(const Pythia8::Particle &part, bool selectFinal = true) {
     return nparts;
  }
 
-void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const char *weightname = "main", Int_t nev = -1, Int_t ndeb = 1)
+void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const char *weightname = "main", const char *pdfset = "CT14nlo", Int_t nev = -1, Int_t ndeb = 1)
 {
   clock_t begin_time = clock();
 
@@ -194,7 +194,7 @@ void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const
   pythia.readString("Tune:preferLHAPDF = 2");
   pythia.readString("Tune:pp = 5");
 
-  pythia.readString("PDF:pSet = LHAPDF6:CT14nlo");
+  pythia.readString(Form("PDF:pSet = LHAPDF6:%s", pdfset));
 
   pythia.readString("Random:setSeed = on");
   pythia.readString(Form("Random:seed = %u", sseed % 900000000));
