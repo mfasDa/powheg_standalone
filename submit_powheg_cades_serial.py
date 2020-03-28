@@ -37,7 +37,7 @@ def createJobscript(outputdir, maxtime, slot, nevents, ebeam, pdfset, muf, mur, 
             configcreator += " -w"
         exewriter.write("python3 {}\n".format(configcreator))
         exewriter.write("echo \"Running simulation ... \"\n")
-        exewriter.write("singularity exec -B /nfs/home:/nfs/home -B /lustre:/lustre /home/mfasel_alice/mfasel_cc7_alice.simg {}/run_powheg_general.sh &> powheg.log\n".format(sourcedir))
+        exewriter.write("singularity exec -B /nfs/home:/nfs/home -B /lustre:/lustre /home/mfasel_alice/mfasel_cc7_alice.simg {}/run_powheg_general.sh main &> run_powheg_main.log\n".format(sourcedir))
         exewriter.write("rm -v {}\n".format(jobscriptname))
         exewriter.write("echo Job done\n")
         exewriter.close() 
