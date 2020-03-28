@@ -8,27 +8,22 @@ import subprocess
 
 sourcedir = os.path.dirname(os.path.abspath(sys.argv[0]))
 
-def createJobscript(workdir, maxtime, seed, variation, pdfset):
+def createJobscript(workdir, seed, variation, pdfset):
     jobscriptname = os.path.join(workdir, "jobscript.sh")
     logfile = os.path.join(workdir, "joboutput_pythia_{}_{}.log".format(pdfset, variation))
     with open(os.path.join(workdir, "jobscript.sh"), "w") as exewriter:
         exewriter.write("#! /bin/bash\n")
-        exewriter.write("#SBATCH -A birthright\n")
         exewriter.write("#SBATCH -N 1\n")
         exewriter.write("#SBATCH -n 1\n")
         exewriter.write("#SBATCH -c 1\n")
-        exewriter.write("#SBATCH -p gpu\n")
         exewriter.write("#SBATCH -J pythia\n")
+        exewriter.write("#SBATCH --partition=long\n")
         exewriter.write("#SBATCH -o {}\n".format(logfile))
-        exewriter.write("#SBATCH -t {}\n".format(maxtime))
-        exewriter.write("#SBATCH --mem=2G\n")
-        exewriter.write("module load PE-gnu\n")
-        exewriter.write("module load singularity\n")
         exewriter.write("echo \"Using working directory {}\"\n".format(workdir))
         exewriter.write("cd {}\n".format(workdir))
         exewriter.write("echo \"Preparing working directories and configurations ...\"\n")
         exewriter.write("echo \"Running simulation ... \"\n")
-        exewriter.write("singularity exec -B /nfs/home:/nfs/home -B /lustre:/lustre /home/mfasel_alice/mfasel_cc7_alice.simg {}/run_pythia_general.sh {} {} {}  &> run_pythia_{}_{}.log\n".format(sourcedir, sourcedir, variation, seed, pdfset, pdfset, variation))
+        exewriter.write("{}/run_pythia_general.sh {} {} {}  &> run_pythia_{}_{}.log\n".format(sourcedir, sourcedir, variation, seed, pdfset, pdfset, variation))
         exewriter.write("rm -v {}\n".format(jobscriptname))
         exewriter.write("echo Job done\n")
         exewriter.close() 
@@ -40,12 +35,11 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--inputdir", metavar="INPUTDIR", type=str, required=True, help="Output directory")
     parser.add_argument("-v", "--variation", metavar="VARIATION", type=str, default="main", help="Scale variation")
     parser.add_argument("-p", "--pdfset", metavar="PDFSET", type=str, default="CT14nlo", help="PDF set")
-    parser.add_argument("-t", "--time", metavar="TIME", default="10:00:00", help="Max. time")
     args = parser.parse_args()
     seed = 0
     for slot in os.listdir(args.inputdir):
         logging.info("Processing job %s", slot)
         slotdir = os.path.join(args.inputdir, slot) 
-        jobscript = createJobscript(slotdir, args.time, seed, args.variation, args.pdfset)
+        jobscript = createJobscript(slotdir, seed, args.variation, args.pdfset)
         subprocess.call(["sbatch", jobscript])
         seed += 1
