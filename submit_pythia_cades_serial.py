@@ -28,7 +28,7 @@ def createJobscript(workdir, maxtime, seed, variation, pdfset):
         exewriter.write("cd {}\n".format(workdir))
         exewriter.write("echo \"Preparing working directories and configurations ...\"\n")
         exewriter.write("echo \"Running simulation ... \"\n")
-        exewriter.write("singularity exec -B /nfs/home:/nfs/home -B /lustre:/lustre /home/mfasel_alice/mfasel_cc7_alice.simg {}/run_pythia_general.sh {} {} {}  &> run_pythia_{}_{}.log\n".format(sourcedir, sourcedir, variation, seed, pdfset, pdfset, variation))
+        exewriter.write("singularity exec -B /nfs/home:/nfs/home -B /lustre:/lustre /home/mfasel_alice/mfasel_cc7_alice.simg {}/run_pythia_general.sh {} {} {} {}  &> run_pythia_{}_{}.log\n".format(sourcedir, sourcedir, variation, seed, pdfset, pdfset, variation))
         exewriter.write("rm -v {}\n".format(jobscriptname))
         exewriter.write("echo Job done\n")
         exewriter.close() 

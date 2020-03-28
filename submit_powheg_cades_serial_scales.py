@@ -34,11 +34,11 @@ def createJobscript(workdir, maxtime):
         exewriter.write("echo \"Using working directory {}\"\n".format(workdir))
         exewriter.write("cd {}\n".format(workdir))
         exewriter.write("echo \"Preparing working directories and configurations ...\"\n")
-        for tag,scales in variations:
+        for tag,scales in variations.items():
             configcreator = "{}/createScaleVariation.py -i powheg.input.main -t {} -r {} -f {}".format(sourcedir, tag, scales["renscale"], scales["factscale"]) 
             exewriter.write("python3 {}\n".format(configcreator))
             exewriter.write("echo \"Running simulation {} (muf {}, mur{}) ... \"\n".format(tag, scales["factscale"], scales["renscale"]))
-            exewriter.write("singularity exec -B /nfs/home:/nfs/home -B /lustre:/lustre /home/mfasel_alice/mfasel_cc7_alice.simg {}/run_powheg_general.sh &> powheg.log\n".format(sourcedir))
+            exewriter.write("singularity exec -B /nfs/home:/nfs/home -B /lustre:/lustre /home/mfasel_alice/mfasel_cc7_alice.simg {}/run_powheg_general.sh {} &> run_powheg_{}.log\n".format(sourcedir, tag, tag))
             exewriter.write("mv powheg.input powheg.input.scale.{}\n".format(tag))
             exewriter.write("mv pwgevents-rwgt.lhe pwgevents.lhe\n")
         exewriter.write("rm -v {}\n".format(jobscriptname))
@@ -50,9 +50,9 @@ if __name__ == "__main__":
     logging.basicConfig(format='[%(levelname)s]: %(message)s', level=logging.INFO)
     parser = argparse.ArgumentParser("submit_powheg.py", "Submitter for POWHEG dijet process")
     parser.add_argument("-i", "--inputdir", metavar="INPUTDIR", type=str, required=True, help="Output directory")
-    parser.add_argument("-t", "--time", metavar="TIME", default="15:00:00", help="Max. time")
+    parser.add_argument("-t", "--time", metavar="TIME", default="10:00:00", help="Max. time")
     args = parser.parse_args()
     for chunk in os.listdir(args.inputdir):
         logging.info("Processing job directory %s", chunk)
-        jobscript = createJobscript(outputdir, args.time, jobID, args.nevents, args.ebeam, args.pdfset, args.mufact, args.muren, args.bornkt, args.bornsupp, args.withnegweight)
+        jobscript = createJobscript(os.path.join(args.inputdir, chunk), args.time)
         subprocess.call(["sbatch", jobscript])

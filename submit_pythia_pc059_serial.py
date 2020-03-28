@@ -23,7 +23,7 @@ def createJobscript(workdir, seed, variation, pdfset):
         exewriter.write("cd {}\n".format(workdir))
         exewriter.write("echo \"Preparing working directories and configurations ...\"\n")
         exewriter.write("echo \"Running simulation ... \"\n")
-        exewriter.write("{}/run_pythia_general.sh {} {} {}  &> run_pythia_{}_{}.log\n".format(sourcedir, sourcedir, variation, seed, pdfset, pdfset, variation))
+        exewriter.write("{}/run_pythia_general.sh {} {} {} {}  &> run_pythia_{}_{}.log\n".format(sourcedir, sourcedir, variation, seed, pdfset, pdfset, variation))
         exewriter.write("rm -v {}\n".format(jobscriptname))
         exewriter.write("echo Job done\n")
         exewriter.close() 
