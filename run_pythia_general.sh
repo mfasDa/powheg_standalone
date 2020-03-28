@@ -2,6 +2,7 @@
 SOURCEDIR=$1
 VARIATION=$2
 SEED=$3
+PDFSET=$4
 
 source $HOME/alice_setenv
 PACKAGES=(pythia fastjet ROOT lhapdf-pdfsets)
@@ -12,7 +13,7 @@ done
 source $HOME/lhapdf_data_setenv
 
 export CONFIG_SEED=$SEED
-OUTPUTFILE=$(printf "POWHEGPYTHIA_%s.root" $VARIATION)
-LOGFILE=$(printf "pythia8_%s.log" $VARIATION)
-cmd=$(printf "root -l -b -q \'%s/RunPythia8.C(\"%s\", \"%s\")\' &> %s" $SOURCEDIR $OUTPUTFILE $VARIATION $LOGFILE)
+OUTPUTFILE=$(printf "POWHEGPYTHIA_%s_%s.root" $PDFSET $VARIATION)
+LOGFILE=$(printf "pythia8_%s_%s.log" $PDFSET $VARIATION)
+cmd=$(printf "root -l -b -q \'%s/RunPythia8.C(\"%s\", \"%s\", \"%s\")\' &> %s" $SOURCEDIR $OUTPUTFILE $VARIATION $PDFSET $LOGFILE)
 eval $cmd
