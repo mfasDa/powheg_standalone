@@ -10,7 +10,8 @@ R__LOAD_LIBRARY(libfastjetplugins);
 #include <ROOT/TSeq.hxx>
 #include <TROOT.h>
 #include <TSystem.h>
-#include <TH1F.h>
+#include <TH1.h>
+#include <TH2.h>
 #include <TClonesArray.h>
 #include <TParticle.h>
 #include <TDatabasePDG.h>
@@ -33,63 +34,13 @@ bool isSelected(const Pythia8::Particle &part, bool selectFinal = true) {
   return true;
 }
 
- Int_t ImportParticles(Pythia8::Pythia &pythia, TClonesArray &clonesParticles, Option_t *option = "")
- {
-    clonesParticles.Clear();
-    Int_t nparts=0;
-    Int_t i;
-    Int_t ioff = 0;
-    int numberOfParticles  = pythia.event.size();
-    if (pythia.event[0].id() == 90) {
-      ioff = -1;
-    }
- 
-    if (!strcmp(option,"") || !strcmp(option,"Final")) {
-       for (i = 0; i < numberOfParticles; i++) {
-          if (pythia.event[i].id() == 90) continue;
-          if (pythia.event[i].isFinal()) {
-             new(clonesParticles[nparts]) TParticle(
-                                                    pythia.event[i].id(),
-                                                    pythia.event[i].isFinal(),
-                                                    pythia.event[i].mother1() + ioff,
-                                                    pythia.event[i].mother2() + ioff,
-                                                    pythia.event[i].daughter1() + ioff,
-                                                    pythia.event[i].daughter2() + ioff,
-                                                    pythia.event[i].px(),     // [GeV/c]
-                                                    pythia.event[i].py(),     // [GeV/c]
-                                                    pythia.event[i].pz(),     // [GeV/c]
-                                                    pythia.event[i].e(),      // [GeV]
-                                                    pythia.event[i].xProd(),  // [mm]
-                                                    pythia.event[i].yProd(),  // [mm]
-                                                    pythia.event[i].zProd(),  // [mm]
-                                                    pythia.event[i].tProd()); // [mm/c]
-             nparts++;
-          } // final state partice
-       } // particle loop
-    } else if (!strcmp(option,"All")) {
-       for (i = 0; i < numberOfParticles; i++) {
-          if (pythia.event[i].id() == 90) continue;
-          new(clonesParticles[nparts]) TParticle(
-                                                 pythia.event[i].id(),
-                                                 pythia.event[i].isFinal(),
-                                                 pythia.event[i].mother1() + ioff,
-                                                 pythia.event[i].mother2() + ioff,
-                                                 pythia.event[i].daughter1() + ioff,
-                                                 pythia.event[i].daughter2() + ioff,
-                                                 pythia.event[i].px(),       // [GeV/c]
-                                                 pythia.event[i].py(),       // [GeV/c]
-                                                 pythia.event[i].pz(),       // [GeV/c]
-                                                 pythia.event[i].e(),        // [GeV]
-                                                 pythia.event[i].xProd(),    // [mm]
-                                                 pythia.event[i].yProd(),    // [mm]
-                                                 pythia.event[i].zProd(),    // [mm]
-                                                 pythia.event[i].tProd());   // [mm/c]
-          nparts++;
-       } // particle loop
-    }
-    if(ioff==-1) nparts--;
-    return nparts;
- }
+std::vector<Pythia8::Particle> getHardPartons(const Pythia8::Event &ev) {
+  std::vector<Pythia8::Particle> particles;
+  for(auto ipart : ROOT::TSeqI(0, ev.size())) {
+    if(ev[ipart].status() == 23) particles.push_back(ev[ipart]);
+  }
+  return particles;
+}
 
 void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const char *weightname = "main", const char *pdfset = "CT14nlo", Int_t nev = -1, Int_t ndeb = 1)
 {
@@ -111,17 +62,43 @@ void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const
        *hNEventPos = new TH1F("hNEventsPos", "Number of events with positive weight", 1, 0., 1.),
        *hNEventNeg = new TH1F("hNEventsNeg", "Number of events with negative weight", 1, 0., 1.),
        *hSumWeightsPos = new TH1F("hSumWeightsPos", "sum of pos. weights", 1, 0., 1.),
-       *hSumWeightsNeg = new TH1F("hSumWeightsNeg", "sum of neg. weights", 1, 0., 1.);
-  std::map<int, TH1*> hFullPtSpecFull, hFullPtSpecSubPlus, hFullPtSpecFullEta, hFullPtSpecSubPlusEta, hFullPtSpecTrackcut5Gev, hFullPtSpecTrackcut5GevSub;
+       *hSumWeightsNeg = new TH1F("hSumWeightsNeg", "sum of neg. weights", 1, 0., 1.),
+       *hPtParton = new TH1F("hPtParton", "pt of the incoming partons", 1000, 0., 1000),
+       *hPtParticles = new TH1F("hPtParticles", "pt of particles used for jet finding", 1000, 0., 1000.);
+  TH2F *hEtaPhiParton = new TH2F("hEtaPhiParton", "Eta-phi of the hard parton", 100, -5., 5., 100, 0., TMath::TwoPi()),
+       *hEtaPtParton = new TH2F("hEtaPtParton", "Eta-pt of the hard parton", 100, -5., 5., 1000, 0., 1000.),
+       *hEtaPhiParticles = new TH2F("hEtaPhiParticles", "Eta-phi of the particles used for jet finding", 100, -1., 1., 100, 0., TMath::TwoPi());
+  std::map<int, TH1*> hFullPtSpecFull, hFullPtSpecSubPlus, hFullPtSpecFullEta, hFullPtSpecSubPlusEta, hFullPtSpecTrackcut5Gev, hFullPtSpecTrackcut5GevSub, hPtConstituents;
+  std::map<int, TH2*> hEtaPhiConstituents, hEtaPhiJets, hPtConstituentJet;
 
   int imaxptbins = 600;
   for (auto R : RVals)
   {
     double radius = double(R)/10.;
+    hPtConstituents[R] = new TH1F(Form("hPtConstituentsR%02d", R),
+                                  Form("Pt of the jet constituents for jets with R=%.1f", radius),
+                                  600, 0., 600.
+    );
+
+    hEtaPhiConstituents[R] = new TH2F(Form("hEtaPhiConstituentsR%02d", R),
+                                      Form("Eta-phi of the jet constituents for jets with R=%.1f", radius),
+                                      100, -1., 1., 100, 0., TMath::TwoPi()
+    );
+
+    hPtConstituentJet[R] = new TH2F(Form("hPtConstituentJetR%02d", R),
+                                    Form("Pt of the jet vs. Pt of the constituent for jets with R=%.1f", radius),
+                                    600, 0., 600., 600, 0., 600.
+    );
+
     hFullPtSpecFull[R] = new TH1F(Form("hFullPtSpecFullR%02d", R),
                                    Form("Full jet cross section R=%.1f with small bin width;P_{T,jet}(Gev/c);d#sigma/dP_{T}d#eta(mb c/Gev)", radius),
                                    imaxptbins, 0, imaxptbins);
     hFullPtSpecFull[R]->Sumw2();
+
+    hEtaPhiJets[R] = new TH2F(Form("hJetEtaPhiR%02d", R),
+                              Form("Eta-phi for jets with R=%.1f", radius),
+                              100, -1., 1., 100, 0., TMath::TwoPi()
+    );
 
     hFullPtSpecSubPlus[R] = new TH1F(Form("hSubPtSpecR%02d", R),
                                       Form("Subtracted jet cross section R=%.1f with small bin width (plus);P_{T,jet}(Gev/c);d#sigma/dP_{T}d#eta(mb c/Gev)", radius),
@@ -262,6 +239,13 @@ void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const
     }
     acceptedevents++;
 
+    // Fill pt for incoming partons
+    for(auto part : getHardPartons(pythia.event)) {
+      hPtParton->Fill(part.pT(), evt_wght);
+      hEtaPhiParton->Fill(part.eta(), TVector2::Phi_0_2pi(part.phi()), evt_wght);
+      hEtaPtParton->Fill(part.eta(), part.pT(), evt_wght);
+    } 
+
     // Particle loop
     std::vector<fastjet::PseudoJet> input_particles;
     for(auto ipart : ROOT::TSeqI(0, pythia.event.size()))
@@ -273,12 +257,13 @@ void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const
       Float_t eta = part.eta();
       Float_t pt = part.pT();
 
-      if (abs(eta) > maxeta)
-        continue;
-      if (pt < 0.15)
+      if (std::abs(eta) > maxeta)
         continue;
 
       input_particles.push_back(fastjet::PseudoJet(part.px(), part.py(), part.pz(), part.e()));
+      
+      hPtParticles->Fill(part.pT(), evt_wght);
+      hEtaPhiParticles->Fill(part.eta(), TVector2::Phi_0_2pi(part.phi()), evt_wght);
     }
 
     if (input_particles.size() == 0)
@@ -332,13 +317,18 @@ void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const
 
         hFullPtSpecFull[R]->Fill(inclusive_jets[i].perp(), evt_wght);
         hFullPtSpecSubPlus[R]->Fill(PtSubPlus, evt_wght);
+        hEtaPhiJets[R]->Fill(inclusive_jets[i].eta(), TVector2::Phi_0_2pi(inclusive_jets[i].phi()), evt_wght);
 
         Double_t LeadingPtTrack = 0;
 
         std::vector<fastjet::PseudoJet> constituents = inclusive_jets[i].constituents();
-        for (unsigned int cns = 0; cns < constituents.size(); cns++)
+        for (unsigned int cns = 0; cns < constituents.size(); cns++){
+          hPtConstituents[R]->Fill(constituents[cns].pt(), evt_wght);
+          hEtaPhiConstituents[R]->Fill(constituents[cns].eta(), TVector2::Phi_0_2pi(constituents[cns].phi()), evt_wght);
+          hPtConstituentJet[R]->Fill(inclusive_jets[i].pt(), constituents[cns].pt(), evt_wght);
           if (constituents[cns].pt() > LeadingPtTrack)
             LeadingPtTrack = constituents[cns].pt();
+        }
 
         if (LeadingPtTrack > 5)
         {
@@ -383,9 +373,18 @@ void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const
   hSumWeights->Write();
   hSumWeightsPos->Write();
   hSumWeightsNeg->Write();
+  hPtParton->Write();
+  hEtaPhiParton->Write();
+  hEtaPtParton->Write();
+  hPtParticles->Write();
+  hEtaPhiParticles->Write();
   for (auto R : RVals)
   {
+    hPtConstituents[R]->Write();
+    hEtaPhiConstituents[R]->Write();
+    hPtConstituentJet[R]->Write();
     hFullPtSpecFull[R]->Write();
+    hEtaPhiJets[R]->Write();
     hFullPtSpecSubPlus[R]->Write();
     hFullPtSpecFullEta[R]->Write();
     hFullPtSpecSubPlusEta[R]->Write();
