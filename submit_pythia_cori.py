@@ -13,6 +13,7 @@ def createMasterJobscript(workdir, platform, queue, maxtime, nslots, minslot, ma
         os.makedirs(workdir, 0o755)
     jobscriptname = os.path.join(workdir, "jobscript_pythia_{}_{}_master{}.sh".format(pdfset, variation, masterID))
     logfile = os.path.join(workdir, "joboutput_pythia_{}_{}_master{}.log".format(pdfset, variation, masterID))
+    jobname = "pythia8_{}_{}".format(pdfset, variation)
     with open(jobscriptname, "w") as exewriter:
         exewriter.write("#! /bin/bash\n")
         exewriter.write("#SBATCH -N 1\n")
@@ -24,13 +25,15 @@ def createMasterJobscript(workdir, platform, queue, maxtime, nslots, minslot, ma
         exewriter.write("#SBATCH -C {}\n".format(platform))
         exewriter.write("#SBATCH --image=docker:mfasel/cc7-alice:latest\n")
         exewriter.write("module load cray-python/3.7.3.2\n")
-        exewriter.write("WORDIR={}\n".format(workdir))
-        exewriter.write("echo \"Running pythia on existing POWHEG {}\"\n")
+        exewriter.write("WORKDIR={}\n".format(workdir))
+        exewriter.write("echo \"Running pythia on existing POWHEG {}\"\n".format(workdir))
         exewriter.write("cd $WORKDIR\n")
         exewriter.write("echo \"Running showering on {} cores, starting from slot {} ... \"\n".format(nslots, minslot))
-        exewriter.write("srun -n {} python3 {}/mpiwrapper.py {} {} {}\n".format(nslots, sourcedir, minslot, variation, pdfset))
+        exewriter.write("SECONDS=0\n")
+        exewriter.write("srun -n {} python3 {}/mpiwrapper_pythia.py {} {} {}\n".format(nslots, sourcedir, minslot, variation, pdfset))
+        exewriter.write("duration=$SECONDS\n")
         exewriter.write("cd {}\n".format(workdir))
-        exewriter.write("echo Job done\n")
+        exewriter.write("echo Job done after $duration seconds\n")
         exewriter.close() 
     return jobscriptname
 
@@ -44,7 +47,7 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--time", metavar="TIME", default="10:00:00", help="Max. time")
     parser.add_argument("-c", "--constraint", metavar="CONSTRAINT", default="knl", help="Platform (haswell or knl)")
     args = parser.parse_args()
-    workdir = os.path.abspath(args.outputdir)
+    workdir = os.path.abspath(args.inputdir)
     slotspermaster = 68
     if args.constraint == "knl":
         slotspermaster = 68
@@ -56,13 +59,20 @@ if __name__ == "__main__":
     maxtime = args.time
     if args.qos == "debug":
         maxtime = "00:30:00"
-    nmasters = math.floor(int(args.jobs) / slotspermaster)
-    if args.jobs % slotspermaster != 0:
+    dirs = os.listdir(workdir)
+    njobs = 0
+    for d in dirs:
+        if not d.isdigit():
+            continue
+        njobs += 1
+    logging.info("Running %d jobs", njobs)
+    nmasters = math.floor(int(njobs) / slotspermaster)
+    if njobs % slotspermaster != 0:
         nmasters += 1
     minslot = 0
     for masterID in range(0, nmasters):
         logging.info("Processing master %d", masterID)
-        nslotsworker = args.jobs - minslot
+        nslotsworker = njobs - minslot
         if nslotsworker > slotspermaster:
             nslotsworker = slotspermaster
         jobscript = createMasterJobscript(workdir, args.constraint, args.qos, maxtime, nslotsworker, minslot, masterID, args.variation, args.pdfset)

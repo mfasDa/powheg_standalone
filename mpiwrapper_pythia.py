@@ -10,12 +10,12 @@ if __name__ == "__main__":
     logging.basicConfig(format='[%(levelname)s]: %(message)s', level=logging.INFO)
     SOURCEDIR = os.path.dirname(os.path.abspath(sys.argv[0]))
     CURRENTSLOT = MPI.COMM_WORLD.Get_rank()
-    MINSLOT = sys.argv[1]
+    MINSLOT = int(sys.argv[1])
     VARIATION = sys.argv[2]
     PDFSET = sys.argv[3]
     logging.info("Starting worker %d ...", CURRENTSLOT)
     GLOBALSLOT = MINSLOT+CURRENTSLOT
-    slotdir = "%0d" %GLOBALSLOT
+    slotdir = "%04d" %GLOBALSLOT
     os.chdir(slotdir)
     logging.info("Running job for slot %d in workdir %s", CURRENTSLOT, os.getcwd())
     content = os.listdir(os.getcwd())
