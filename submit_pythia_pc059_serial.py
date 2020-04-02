@@ -19,6 +19,7 @@ def createJobscript(workdir, seed, variation, pdfset):
         exewriter.write("#SBATCH -J pythia\n")
         exewriter.write("#SBATCH --partition=long\n")
         exewriter.write("#SBATCH -o {}\n".format(logfile))
+        exewriter.write("export CONF=/clusterfs1/markus/alice\n")
         exewriter.write("echo \"Using working directory {}\"\n".format(workdir))
         exewriter.write("cd {}\n".format(workdir))
         exewriter.write("echo \"Preparing working directories and configurations ...\"\n")
@@ -37,9 +38,14 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--pdfset", metavar="PDFSET", type=str, default="CT14nlo", help="PDF set")
     args = parser.parse_args()
     seed = 0
-    for slot in os.listdir(args.inputdir):
-        logging.info("Processing job %s", slot)
+    for slot in sorted(os.listdir(args.inputdir)):
         slotdir = os.path.join(args.inputdir, slot) 
+        if not os.path.isdir(slotdir):
+            continue
+        if not os.path.exists(os.path.join(slotdir, "pwgevents.lhe")):
+            logging.error("Directory %s does not contain pwgevents.lhe", slotdir)
+            continue
+        logging.info("Processing job %s", slot)
         jobscript = createJobscript(slotdir, seed, args.variation, args.pdfset)
         subprocess.call(["sbatch", jobscript])
         seed += 1
