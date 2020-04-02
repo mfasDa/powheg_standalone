@@ -37,12 +37,12 @@ bool isSelected(const Pythia8::Particle &part, bool selectFinal = true) {
 std::vector<Pythia8::Particle> getHardPartons(const Pythia8::Event &ev) {
   std::vector<Pythia8::Particle> particles;
   for(auto ipart : ROOT::TSeqI(0, ev.size())) {
-    if(ev[ipart].status() == 23) particles.push_back(ev[ipart]);
+    if(std::abs(ev[ipart].status()) == 23) particles.push_back(ev[ipart]);
   }
   return particles;
 }
 
-void RunPythia8(const char *weightname = "main", const char *pdfset = "CT14nlo", const char *pythiatune, Int_t nev = -1, Int_t ndeb = 1)
+void RunPythia8(const char *weightname = "main", const char *pdfset = "CT14nlo", const char *pythiatune = "Monash2013", Int_t nev = -1, Int_t ndeb = 1)
 {
   clock_t begin_time = clock();
 

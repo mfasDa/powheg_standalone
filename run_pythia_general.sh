@@ -17,5 +17,5 @@ source $CONF/lhapdf_data_setenv
 
 export CONFIG_SEED=$SEED
 LOGFILE=$(printf "pythia8_%s_%s_%s.log" $PDFSET $PYTHIATUNE $VARIATION)
-cmd=$(printf "root -l -b -q \'%s/RunPythia8.C(\"%s\", \"%s\", \"%s\")\' &> %s" $SOURCEDIR $VARIATION $PYTHIATUNE $PDFSET $LOGFILE)
+cmd=$(printf "root -l -b -q \'%s/RunPythia8.C(\"%s\", \"%s\", \"%s\")\' &> %s" $SOURCEDIR $VARIATION $PDFSET $PYTHIATUNE $LOGFILE)
 eval $cmd
