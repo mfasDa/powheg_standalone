@@ -8,10 +8,10 @@ import subprocess
 
 sourcedir = os.path.dirname(os.path.abspath(sys.argv[0]))
 
-def createJobscript(workdir, seed, variation, pdfset):
-    jobscriptname = os.path.join(workdir, "jobscript.sh")
-    logfile = os.path.join(workdir, "joboutput_pythia_{}_{}.log".format(pdfset, variation))
-    with open(os.path.join(workdir, "jobscript.sh"), "w") as exewriter:
+def createJobscript(workdir, seed, variation, pdfset, tune):
+    jobscriptname = os.path.join(workdir, "jobscript_{}_{}_{}.sh".format(pdfset, tune, variation))
+    logfile = os.path.join(workdir, "joboutput_pythia_{}_{}_{}.log".format(pdfset, tune, variation))
+    with open(os.path.join(workdir, jobscriptname), "w") as exewriter:
         exewriter.write("#! /bin/bash\n")
         exewriter.write("#SBATCH -N 1\n")
         exewriter.write("#SBATCH -n 1\n")
@@ -24,7 +24,7 @@ def createJobscript(workdir, seed, variation, pdfset):
         exewriter.write("cd {}\n".format(workdir))
         exewriter.write("echo \"Preparing working directories and configurations ...\"\n")
         exewriter.write("echo \"Running simulation ... \"\n")
-        exewriter.write("{}/run_pythia_general.sh {} {} {} {}  &> run_pythia_{}_{}.log\n".format(sourcedir, sourcedir, variation, seed, pdfset, pdfset, variation))
+        exewriter.write("{}/run_pythia_general.sh {} {} {} {} {}  &> run_pythia_{}_{}_{}.log\n".format(sourcedir, sourcedir, variation, seed, pdfset, tune, pdfset, tune, variation))
         exewriter.write("rm -v {}\n".format(jobscriptname))
         exewriter.write("echo Job done\n")
         exewriter.close() 
@@ -36,6 +36,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--inputdir", metavar="INPUTDIR", type=str, required=True, help="Output directory")
     parser.add_argument("-v", "--variation", metavar="VARIATION", type=str, default="main", help="Scale variation")
     parser.add_argument("-p", "--pdfset", metavar="PDFSET", type=str, default="CT14nlo", help="PDF set")
+    parser.add_argument("-t", "--tune", metavar="TUNE", type=str, default="Monash2013", help="PYTHIA tune")
     args = parser.parse_args()
     seed = 0
     for slot in sorted(os.listdir(args.inputdir)):
@@ -46,6 +47,6 @@ if __name__ == "__main__":
             logging.error("Directory %s does not contain pwgevents.lhe", slotdir)
             continue
         logging.info("Processing job %s", slot)
-        jobscript = createJobscript(slotdir, seed, args.variation, args.pdfset)
+        jobscript = createJobscript(slotdir, seed, args.variation, args.pdfset, args.tune)
         subprocess.call(["sbatch", jobscript])
         seed += 1

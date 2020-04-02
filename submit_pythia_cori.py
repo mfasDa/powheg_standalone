@@ -8,29 +8,30 @@ import subprocess
 
 sourcedir = os.path.dirname(os.path.abspath(sys.argv[0]))
 
-def createMasterJobscript(workdir, platform, queue, maxtime, nslots, minslot, masterID, variation, pdfset):
+def createMasterJobscript(workdir, platform, queue, maxtime, nslots, minslot, masterID, variation, pdfset, tune):
     if not os.path.exists(workdir):
         os.makedirs(workdir, 0o755)
     jobscriptname = os.path.join(workdir, "jobscript_pythia_{}_{}_master{}.sh".format(pdfset, variation, masterID))
     logfile = os.path.join(workdir, "joboutput_pythia_{}_{}_master{}.log".format(pdfset, variation, masterID))
-    jobname = "pythia8_{}_{}".format(pdfset, variation)
+    jobname = "pythia8_{}_{}_{}".format(pdfset, tune, variation)
     with open(jobscriptname, "w") as exewriter:
         exewriter.write("#! /bin/bash\n")
         exewriter.write("#SBATCH -N 1\n")
         exewriter.write("#SBATCH --ntasks-per-node={}\n".format(nslots))
         exewriter.write("#SBATCH --qos={}\n".format(queue))
-        exewriter.write("#SBATCH -J powheg\n")
+        exewriter.write("#SBATCH -J {}\n".format(jobname))
         exewriter.write("#SBATCH -o {}\n".format(logfile))
         exewriter.write("#SBATCH -t {}\n".format(maxtime))
         exewriter.write("#SBATCH -C {}\n".format(platform))
         exewriter.write("#SBATCH --image=docker:mfasel/cc7-alice:latest\n")
+        exewriter.write("export CONF={}\n".format(os.getenv("HOME")))
         exewriter.write("module load cray-python/3.7.3.2\n")
         exewriter.write("WORKDIR={}\n".format(workdir))
         exewriter.write("echo \"Running pythia on existing POWHEG {}\"\n".format(workdir))
         exewriter.write("cd $WORKDIR\n")
         exewriter.write("echo \"Running showering on {} cores, starting from slot {} ... \"\n".format(nslots, minslot))
         exewriter.write("SECONDS=0\n")
-        exewriter.write("srun -n {} python3 {}/mpiwrapper_pythia.py {} {} {}\n".format(nslots, sourcedir, minslot, variation, pdfset))
+        exewriter.write("srun -n {} python3 {}/mpiwrapper_pythia.py {} {} {} {}\n".format(nslots, sourcedir, minslot, variation, pdfset, tune))
         exewriter.write("duration=$SECONDS\n")
         exewriter.write("cd {}\n".format(workdir))
         exewriter.write("echo Job done after $duration seconds\n")
@@ -43,6 +44,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--inputdir", metavar="INPUTDIR", type=str, required=True, help="Directory with POWHEG events")
     parser.add_argument("-p", "--pdfset", metavar="PDFSET", type=str, default="CT14nlo", help="PDF set")
     parser.add_argument("-v", "--variation", metavar="VARIATION", type=str, default="main", help="Scale variation")
+    parser.add_argument("-u", "--tune", metavar="TUNE", type=str, default="Monash2013", help="PYTHIA tune")
     parser.add_argument("-q", "--qos", metavar="QOS", default="regular", help="Cori queue")
     parser.add_argument("-t", "--time", metavar="TIME", default="10:00:00", help="Max. time")
     parser.add_argument("-c", "--constraint", metavar="CONSTRAINT", default="knl", help="Platform (haswell or knl)")
@@ -75,6 +77,6 @@ if __name__ == "__main__":
         nslotsworker = njobs - minslot
         if nslotsworker > slotspermaster:
             nslotsworker = slotspermaster
-        jobscript = createMasterJobscript(workdir, args.constraint, args.qos, maxtime, nslotsworker, minslot, masterID, args.variation, args.pdfset)
+        jobscript = createMasterJobscript(workdir, args.constraint, args.qos, maxtime, nslotsworker, minslot, masterID, args.variation, args.pdfset, args.tune)
         subprocess.call(["sbatch", jobscript])
         minslot += nslotsworker

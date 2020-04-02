@@ -42,7 +42,7 @@ std::vector<Pythia8::Particle> getHardPartons(const Pythia8::Event &ev) {
   return particles;
 }
 
-void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const char *weightname = "main", const char *pdfset = "CT14nlo", Int_t nev = -1, Int_t ndeb = 1)
+void RunPythia8(const char *weightname = "main", const char *pdfset = "CT14nlo", const char *pythiatune, Int_t nev = -1, Int_t ndeb = 1)
 {
   clock_t begin_time = clock();
 
@@ -54,6 +54,10 @@ void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const
     sseed = atoi(gSystem->Getenv("CONFIG_SEED"));
     std::cout << "\nseed for Random number generation is : " << sseed << std::endl;
   }
+
+  std::stringstream outfilename;
+  outfilename << "POWHEGPYTHIA8_" << pdfset << "_" << pythiatune << "_" << weightname << ".root";
+  std::cout << "Using output file " << outfilename.str().data();
   
   std::array<Int_t, 5> RVals = {{2, 3, 4, 5, 6}};
 
@@ -130,6 +134,22 @@ void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const
   fastjet::GhostedAreaSpec area_spec(ghost_maxrap);
   fastjet::AreaDefinition area_def(fastjet::active_area, area_spec);
 
+  std::map<std::string, int> tunehandler = {{"Tune0", 0}, {"Tunedefault", 1}, {"Tune1", 2},
+                             {"Tune2C", 3}, {"Tune2M", 4}, {"Tune4C", 5}, {"Tune4Cx", 6},
+                             {"ATLASMBTuneA2-CTEQ6L1", 7}, {"ATLASMBTuneA2-MSTW2008LO", 8}, 
+                             {"ATLASUETuneAU2-CTEQ6L1", 9}, {"ATLASUETuneAU2-MSTW2008LO", 10}, 
+                             {"ATLASUETuneAU2-CT10", 11}, {"ATLASUETuneAU2-MRST2007LO", 12}, 
+                             {"ATLASUETuneAU2-MRST2007LO", 13}, {"Monash2013", 14}}; 
+  int tuneID = -1;
+  auto tuneresult = tunehandler.find(pythiatune);
+  if(tuneresult == tunehandler.end()) {
+    std::cerr << "Pythia tune " << pythiatune << " not found, exiting ..." << std::endl;
+    return;
+  } else {
+    std::cout << "Using pythia tune " << pythiatune << " ..." << std::endl;
+    tuneID = tuneresult->second;
+  }
+
   // Configure
   Pythia8::Pythia pythia;
   pythia.readString("Next:numberShowLHA = 1");
@@ -169,7 +189,7 @@ void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const
   pythia.readString("POWHEG:QEDveto = 2");
 
   pythia.readString("Tune:preferLHAPDF = 2");
-  pythia.readString("Tune:pp = 5");
+  pythia.readString(Form("Tune:pp = %d", tuneID));
 
   pythia.readString(Form("PDF:pSet = LHAPDF6:%s", pdfset));
 
@@ -366,7 +386,7 @@ void RunPythia8(Char_t const *foutname = "Pythia8JetSpectra_CT14nlo.root", const
     hFullPtSpecTrackcut5GevSub[R]->Scale((1.0 / eta), "width");
   }
 
-  TFile *fout = new TFile(foutname, "RECREATE");
+  TFile *fout = new TFile(outfilename.str().data(), "RECREATE");
   hNEvent->Write();
   hNEventPos->Write();
   hNEventNeg->Write();
