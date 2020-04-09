@@ -42,7 +42,7 @@ std::vector<Pythia8::Particle> getHardPartons(const Pythia8::Event &ev) {
   return particles;
 }
 
-void RunPythia8(const char *weightname = "main", const char *pdfset = "CT14nlo", const char *pythiatune = "Monash2013", Int_t nev = -1, Int_t ndeb = 1)
+void RunPythia8(const char *weightname = "main", const char *pdfset = "CT14nlo", const char *pythiatune = "Monash2013", const char *commands = "", Int_t nev = -1, Int_t ndeb = 1)
 {
   clock_t begin_time = clock();
 
@@ -139,7 +139,14 @@ void RunPythia8(const char *weightname = "main", const char *pdfset = "CT14nlo",
                              {"ATLASMBTuneA2-CTEQ6L1", 7}, {"ATLASMBTuneA2-MSTW2008LO", 8}, 
                              {"ATLASUETuneAU2-CTEQ6L1", 9}, {"ATLASUETuneAU2-MSTW2008LO", 10}, 
                              {"ATLASUETuneAU2-CT10", 11}, {"ATLASUETuneAU2-MRST2007LO", 12}, 
-                             {"ATLASUETuneAU2-MRST2007LO", 13}, {"Monash2013", 14}}; 
+                             {"ATLASUETuneAU2-MRST2007LO", 13}, {"Monash2013", 14},
+                             {"CMSUETuneCUETP8S1-CTEQ6L1", 15}, {"CMSUETuneCUETP8S1-HERAPDF1.5LO", 16},
+                             {"AZ", 17}, {"CMSTuneMonashStar", 18}, {"A14centralCTEQL1", 19},
+                             {"A14centralMSTW2008LO", 20}, {"A14centralNNPDF2.3LO", 21},
+                             {"A14centralHERAPDF1.5LO", 22}, {"A14var1", 23},
+                             {"A14var1-", 24}, {"A14var2+", 25}, {"A14var2-", 26},
+                             {"A14var3a+", 27}, {"A14var3a-", 28}, {"A14var3b+", 29},
+                             {"A14var3b-", 30}, {"A14var3c+", 31}, {"A14var3c-", 32}}; 
   int tuneID = -1;
   auto tuneresult = tunehandler.find(pythiatune);
   if(tuneresult == tunehandler.end()) {
@@ -152,22 +159,32 @@ void RunPythia8(const char *weightname = "main", const char *pdfset = "CT14nlo",
 
   // Configure
   Pythia8::Pythia pythia;
-  pythia.readString("Next:numberShowLHA = 1");
-  pythia.readString("Next:numberShowInfo = 1");
-  pythia.readString("Next:numberShowProcess = 1");
-  pythia.readString("Next:numberShowEvent = 1");
-  pythia.readString("Main:timesAllowErrors = 10");
+  if(std::string_view(commands).length()) {
+    std::cout << "reading commands from file " << commands << std::endl;
+    pythia.readFile(commands);
+  } else {
+    pythia.readString("Next:numberShowLHA = 1");
+    pythia.readString("Next:numberShowInfo = 1");
+    pythia.readString("Next:numberShowProcess = 1");
+    pythia.readString("Next:numberShowEvent = 1");
+    pythia.readString("Main:timesAllowErrors = 10");
 
-  pythia.readString("Init:showChangedSettings = on");
-  pythia.readString("Init:showChangedParticleData = off");
+    pythia.readString("Init:showChangedSettings = on");
+    pythia.readString("Init:showChangedParticleData = off");
+  
+    pythia.readString("Beams:frametype = 4");
+    pythia.readString("Beams:LHEF = pwgevents.lhe");
+    pythia.readString("POWHEG:nFinal = 2");
+    pythia.readString("POWHEG:veto = 1");
+    pythia.readString("POWHEG:vetoCount = 1000000");
+    pythia.readString("POWHEG:pTemt = 0");
+    pythia.readString("POWHEG:emitted = 3"); //!
+    pythia.readString("POWHEG:pTdef = 1");
+    pythia.readString("POWHEG:MPIveto = 1"); //!
+    pythia.readString("POWHEG:QEDveto = 2");
 
-  pythia.readString("Beams:frametype = 4");
-
-  pythia.readString("Beams:LHEF = pwgevents.lhe");
-
-  pythia.readString("POWHEG:nFinal = 2");
-
-  pythia.readString("PartonLevel:MPI = on"); //! TEST
+    pythia.readString("PartonLevel:MPI = on"); //! TEST
+  }
 
   pythia.readString("111:mayDecay  = on");
   pythia.readString("310:mayDecay  = off");
@@ -179,19 +196,14 @@ void RunPythia8(const char *weightname = "main", const char *pdfset = "CT14nlo",
   pythia.readString("3322:mayDecay = off");
   pythia.readString("3334:mayDecay = off");
 
-  pythia.readString("POWHEG:veto = 1");
-  pythia.readString("POWHEG:vetoCount = 1000000");
-  pythia.readString("POWHEG:pThard = 2"); //!
-  pythia.readString("POWHEG:pTemt = 0");
-  pythia.readString("POWHEG:emitted = 3"); //!
-  pythia.readString("POWHEG:pTdef = 1");
-  pythia.readString("POWHEG:MPIveto = 1"); //!
-  pythia.readString("POWHEG:QEDveto = 2");
 
-  pythia.readString("Tune:preferLHAPDF = 2");
   pythia.readString(Form("Tune:pp = %d", tuneID));
+  pythia.readString("Tune:preferLHAPDF = 2");
 
-  pythia.readString(Form("PDF:pSet = LHAPDF6:%s", pdfset));
+  if(std::string_view(pdfset) != std::string_view("default")){
+    std::cout << "Using non-default pdfset " << pdfset << " from LHAPDF6" << std::endl;
+    pythia.readString(Form("PDF:pSet = LHAPDF6:%s", pdfset));
+  }
 
   pythia.readString("Random:setSeed = on");
   pythia.readString(Form("Random:seed = %u", sseed % 900000000));

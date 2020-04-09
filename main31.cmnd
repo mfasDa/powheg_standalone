@@ -26,7 +26,7 @@ Beams:frameType = 4
 ! t tbar pair production.
 #Beams:LHEF = powheg-hvq.lhe
 ! QCD 2- and 3-jet events.
-Beams:LHEF = powheg-dijets.lhe
+Beams:LHEF = pwgevents.lhe
 
 ! Number of outgoing particles of POWHEG Born level process
 ! (i.e. not counting additional POWHEG radiation)

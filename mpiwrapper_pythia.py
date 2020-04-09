@@ -14,6 +14,7 @@ if __name__ == "__main__":
     VARIATION = sys.argv[2]
     PDFSET = sys.argv[3]
     TUNE = sys.argv[4]
+    FILE =  sys.argv[5]
     logging.info("Starting worker %d ...", CURRENTSLOT)
     GLOBALSLOT = MINSLOT+CURRENTSLOT
     slotdir = "%04d" %GLOBALSLOT
@@ -30,7 +31,7 @@ if __name__ == "__main__":
             contentstring += f
         logging.info("Content of working directory %s: %s", os.getcwd(), contentstring)
     content = os.listdir(os.getcwd())
-    subprocess.call("shifter {} {} {} {} {} {} &> run_pythia_{}_{}_{}.log".format(os.path.join(SOURCEDIR, "run_pythia_general.sh"), SOURCEDIR, VARIATION, GLOBALSLOT, PDFSET, TUNE, PDFSET, TUNE, VARIATION), shell = True)
+    subprocess.call("shifter {} {} {} {} {} {} {} &> run_pythia_{}_{}_{}.log".format(os.path.join(SOURCEDIR, "run_pythia_general.sh"), SOURCEDIR, VARIATION, GLOBALSLOT, PDFSET, TUNE, FILE, PDFSET, TUNE, VARIATION), shell = True)
     content = os.listdir(os.getcwd())
     if not len(content):
         logging.info("Working directory %s empty after job execution ...", os.getcwd())
